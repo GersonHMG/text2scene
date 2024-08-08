@@ -22,7 +22,10 @@ func try_spawn(scene_name) -> Spatial:
 	
 	for i in range(0,50):
 		var rand_pos = get_random_floor_point()
-		scene.global_translation = rand_pos
+		if i%3 == 0:
+			move_to_random_wall(scene)
+		else:
+			scene.global_translation = rand_pos
 		#Check for collision
 		if (!obj_is_valid_pos(scene)):
 			OBJECTS.append(scene)
@@ -61,16 +64,30 @@ func move_to_random_wall(obj : Spatial):
 		obj_segment = [vertices[0],vertices[3]]
 	
 	var o_segment_d = obj_segment[0].distance_to(obj_segment[1])
-	var w_segment_d = wall[0].distance_to(wall[1])
+	# Object is always less than wall
+	var place_segment = wall[0].distance_to(wall[1]) - o_segment_d
+	var dir_vec = (wall[1] - wall[0]).normalized()
 	
-	var start_point = randi() % (wall[1].x - wall[0].x) + wall[0].x
-
+	var rand_n = rand_range(0, place_segment) 
+	var rand_point = dir_vec*rand_n
+	
+	rand_point += wall[0]
+	var obj_pos = Vector2(obj.global_translation.x, obj.global_translation.z) - obj_segment[0]
+	obj_pos += rand_point
+	obj.global_translation = Vector3(obj_pos.x,0,obj_pos.y)
 
 # Returns a segment that represent a wall
 func get_random_wall():
-	return [Vector2(0,0), Vector2(4,0), 0]
+	var walls = [
+		[Vector2(0,0), Vector2(4,0), 0],
+		[Vector2(4,0), Vector2(4,4), 1],
+		[Vector2(0,4), Vector2(4,4), 2],
+		[Vector2(0,0), Vector2(0,4), 3]
+	]
+	return walls[randi()%walls.size()]
 
 func _ready():
 	randomize()
 	for i in range(0,30):
-		try_spawn("res://objects/bed/Bed.tscn")
+		var obj = try_spawn("res://objects/bed/Bed.tscn")
+		
